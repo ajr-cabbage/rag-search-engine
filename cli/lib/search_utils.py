@@ -2,6 +2,7 @@ import string
 import json
 import pickle
 from pathlib import Path
+import sys
 from typing import Any
 from nltk.stem import PorterStemmer
 
@@ -12,9 +13,9 @@ class InvertedIndex:
     def __init__(self) -> None:
         self.index = {}
         self.docmap = {}
-        self.stop_words = load_stop_words("./data/stopwords.txt")
+        self.stop_words: list[str] = load_stop_words("./data/stopwords.txt")
 
-    def __add_document(self, doc_id, text) -> None:
+    def __add_document(self, doc_id: int, text: str) -> None:
         tokens = stem_tokens(filter_stop_tokens(tokenize_string(text), self.stop_words))
         for token in tokens:
             if token in self.index:
@@ -41,6 +42,19 @@ class InvertedIndex:
             pickle.dump(self.index, file)
         with open(docmap_filepath, "wb") as file:
             pickle.dump(self.docmap, file)
+
+    def load(self) -> None:
+        index_path = Path("./cache/index.pkl")
+        if not index_path.is_file():
+            raise FileNotFoundError("index file not found")
+        docmap_path = Path("./cache/docmap.pkl")
+        if not docmap_path.is_file():
+            raise FileNotFoundError("docmap file not found")
+        with open(index_path, "rb") as file:
+            self.index = pickle.load(file)
+        with open(docmap_path, "rb") as file:
+            self.docmap = pickle.load(file)
+
 
 def tokenize_string(input: str) -> list[str]:
     if not input:
@@ -87,16 +101,26 @@ def load_stop_words(filepath: str) -> list[str]:
         stop_words = content.translate(translate_table).lower().splitlines()
     return stop_words
 
-def search_command(query: str, movies: list[Any], stop_words: list[str]) -> None:
-    query_tokens = stem_tokens(filter_stop_tokens(tokenize_string(query), stop_words))
+def search_command(query: str, inv_index: InvertedIndex) -> None:
+    try:
+        inv_index.load()
+    except FileNotFoundError as e:
+        print(e)
+        sys.exit(1)
+    query_tokens = stem_tokens(filter_stop_tokens(tokenize_string(query), inv_index.stop_words))
     item_number = 1
-    for movie in movies:
-        title_tokens = stem_tokens(filter_stop_tokens(tokenize_string(movie["title"]), stop_words))
-        if has_match(query_tokens, title_tokens):
-            print(f"{item_number}. {movie["title"]}")
-            if item_number >= 5:
-                break
-            item_number += 1
+    matching_ids: list[int] = []
+    for query_token in query_tokens:
+        if query_token in inv_index.index:
+            for id in inv_index.index[query_token]:
+                matching_ids.append(id)
+    matching_ids.sort()
+    if len(matching_ids) == 0:
+        print("No Matches!")
+        sys.exit(0)
+    else:
+        for id in matching_ids[:5]:
+            print(inv_index.docmap[id]["title"])
 
 def build_command(inv_index: InvertedIndex, movies_dat_filepath: str):
     inv_index.build(movies_dat_filepath)

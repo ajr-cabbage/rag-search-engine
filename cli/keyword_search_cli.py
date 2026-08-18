@@ -1,5 +1,7 @@
 import argparse
 from typing import Any
+
+from nltk.sem.evaluate import sys
 from lib.search_utils import build_command, search_command, load_movies, load_stop_words, InvertedIndex
 
 def main() -> None:
@@ -22,12 +24,12 @@ def main() -> None:
     match args.command:
         case "search":
             print("Searching for:", args.query)
-            search_command(args.query, movies_list, stop_words)
+            search_command(args.query, inv_index)
         case "build":
             print(f"Building index from {movies_dat_filepath} ...")
             build_command(inv_index, movies_dat_filepath)
-            s = list(inv_index.index["merida"])
-            print(f"First document for token 'merida' = {s[0]}")
+            # s = list(inv_index.index["merida"])
+            # print(f"First document for token 'merida' = {s[0]}")
         case _:
             parser.print_help()
 
