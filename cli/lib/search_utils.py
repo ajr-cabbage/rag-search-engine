@@ -86,6 +86,9 @@ class InvertedIndex:
     def get_idf(self, term: str) -> float:
         return math.log((len(self.docmap)+1) / (len(self.index[term]) + 1))
 
+    def get_bm25_idf(self, term: str) -> float:
+        return math.log((len(self.docmap) - len(self.index[term]) + 0.5) / (len(self.index[term]) + 0.5) + 1)
+
 def load_stop_words(filepath: str) -> list[str]:
     with open(filepath, "r") as file:
         content = file.read()
@@ -203,3 +206,16 @@ def tfidf_command(doc_id: int, term: str, inv_index: InvertedIndex):
         return
     tfidf_score: float = inv_index.get_tf(doc_id, tok) * inv_index.get_idf(tok)
     print(f"TF-IDF score of '{term}' in document '{doc_id}': {tfidf_score:.2f}")
+
+def bm25_idf_command(term: str, inv_index: InvertedIndex):
+    try:
+        inv_index.load()
+    except FileNotFoundError as e:
+        print(e)
+        sys.exit(1)
+    try:
+        tok = tokenize_term(term)
+    except ValueError as e:
+        print(e)
+        return
+    print(f"BM25 IDF score of '{term}': {inv_index.get_bm25_idf(tok):.2f}")
