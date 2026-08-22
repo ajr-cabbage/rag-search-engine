@@ -1,8 +1,9 @@
 import argparse
 from typing import Any
-
 from nltk.sem.evaluate import sys
-from lib.search_utils import bm25_idf_command, build_command, idf_command, search_command, tf_command, InvertedIndex, tfidf_command
+from lib.inverted_index import InvertedIndex
+from lib.cli_commands import search_command, build_command, tf_command, idf_command,tfidf_command, bm25_idf_command, bm25_tf_command
+from lib.constants import BM25_K1
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
@@ -21,6 +22,10 @@ def main() -> None:
     _ = tfidf_parser.add_argument("term", type=str, help="tf-idf match term")
     bm25_idf_parser = subparsers.add_parser("bm25idf", help="Get BM25 IDF score for a given term")
     _ = bm25_idf_parser.add_argument("term", type=str, help="Term to get BM25 IDF score for")
+    bm25_tf_parser = subparsers.add_parser("bm25tf", help="Get BM25 TF score for a given document ID and term")
+    _ = bm25_tf_parser.add_argument("doc_id", type=int, help="Document ID")
+    _ = bm25_tf_parser.add_argument("term", type=str, help="Term to get BM25 TF score for")
+    _ = bm25_tf_parser.add_argument("k1", type=float, nargs="?", default=BM25_K1, help="Tunable BM25 K1 parameter")
 
     args = parser.parse_args()
 
@@ -44,6 +49,8 @@ def main() -> None:
             tfidf_command(args.doc_id, args.term, inv_index)
         case "bm25idf":
             bm25_idf_command(args.term, inv_index)
+        case "bm25tf":
+            bm25_tf_command(args.doc_id, args.term, inv_index, k1=args.k1)
         case _:
             parser.print_help()
 
