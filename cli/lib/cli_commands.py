@@ -1,7 +1,7 @@
-import sys
+from .constants import BM25_B, BM25_K1
 from .inverted_index import InvertedIndex
 from .search_utils import stem_tokens, filter_stop_tokens, tokenize_string, tokenize_term
-from .constants import BM25_K1
+import sys
 
 def search_command(query: str, inv_index: InvertedIndex) -> None:
     try:
@@ -80,7 +80,7 @@ def bm25_idf_command(term: str, inv_index: InvertedIndex):
         return
     print(f"BM25 IDF score of '{term}': {inv_index.get_bm25_idf(tok):.2f}")
 
-def bm25_tf_command(doc_id: int, term: str, inv_index: InvertedIndex, k1=BM25_K1):
+def bm25_tf_command(doc_id: int, term: str, inv_index: InvertedIndex, k1: float=BM25_K1, b:float=BM25_B):
     try:
         inv_index.load()
     except FileNotFoundError as e:
@@ -91,4 +91,19 @@ def bm25_tf_command(doc_id: int, term: str, inv_index: InvertedIndex, k1=BM25_K1
     except ValueError as e:
         print(e)
         return
-    print(f"BM25 TF score of '{term}' in document '{doc_id}': {inv_index.get_bm25_tf(doc_id, tok):.2f}")
+    print(f"BM25 TF score of '{term}' in document '{doc_id}': {inv_index.get_bm25_tf(doc_id, tok, k1, b):.2f}")
+
+def bm25_search_command(query:str, inv_index:InvertedIndex, limit: int=5):
+    try:
+        inv_index.load()
+    except FileNotFoundError as e:
+        print(e)
+        sys.exit(1)
+    results = inv_index.bm25_search(query, limit)
+    if len(results) == 0:
+        print("No results found :(")
+        sys.exit()
+    item_number = 1
+    for result in results:
+        print(f"{item_number}. ({result}) {inv_index.docmap[result]["title"]} - Score: {results[result]:.2f}")
+        item_number += 1
