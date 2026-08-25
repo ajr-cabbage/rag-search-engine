@@ -3,6 +3,7 @@ from typing import Any
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from torch import os
+from torch.nn.functional import embedding
 
 from .search_utils import load_movies
 
@@ -51,6 +52,28 @@ class SemanticSearch:
                 return self.embeddings
         return self.build_embedddings(documents)
 
+    def search(self, query: str, limit: int) -> list[dict[str, Any]]:
+        if len(self.embeddings) == 0:
+            raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
+        query_embedding = self.generate_embedding(query)
+        scores: list[tuple[float, Any]] = []
+        for i in range(len(self.embeddings)):
+            cos_sim: float = cosine_similarity(query_embedding, self.embeddings[i])
+            score_entry = (cos_sim, self.documents[i])
+            scores.append(score_entry)
+        sorted_scores = sorted(scores, key=lambda x: x[0], reverse=True)
+        results: list[dict[str, Any]] = []
+        for score in sorted_scores:
+            results_entry = {
+                "score": score[0],
+                "title": score[1]["title"],
+                "description": score[1]["description"]
+            }
+            results.append(results_entry)
+        return results[:limit]
+
+
+
 def verify_model():
     test_model = SemanticSearch()
     print(f"Model loaded: {test_model.model}")
@@ -73,3 +96,28 @@ def verify_embeddings():
     embeddings = sem_search.load_or_create_embeddings(documents)
     print(f"Number of docs:   {len(documents)}")
     print(f"Embeddings shape: {embeddings.shape[0]} vectors in {embeddings.shape[1]} dimensions")
+
+def embed_query_text(query: str):
+    sem_search = SemanticSearch()
+    embedding = sem_search.generate_embedding(query)
+    print(f"Query: {query}")
+    print(f"First 3 dimensions: {embedding[:3]}")
+    print(f"Shape: {embedding.shape}")
+
+def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+    dot_product = np.dot(vec1, vec2)
+    norm1 = np.linalg.norm(vec1)
+    norm2 = np.linalg.norm(vec2)
+
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+
+    return dot_product / (norm1 * norm2)
+
+def search_command(query: str, limit: int=5):
+    sem_search = SemanticSearch()
+    documents = load_movies("./data/movies.json")
+    sem_search.load_or_create_embeddings(documents)
+    results = sem_search.search(query, limit)
+    for i in range(len(results)):
+        print(f"{i+1}. {results[i]["title"]} (score: {results[i]["score"]:.4f})\n  {results[i]["description"]}\n")
