@@ -1,6 +1,8 @@
+from mimetypes import inited
 from pathlib import Path
 from typing import Any
 import numpy as np
+import re
 from sentence_transformers import SentenceTransformer
 from torch import os
 from torch.nn.functional import embedding
@@ -108,11 +110,37 @@ def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
     dot_product = np.dot(vec1, vec2)
     norm1 = np.linalg.norm(vec1)
     norm2 = np.linalg.norm(vec2)
-
     if norm1 == 0 or norm2 == 0:
         return 0.0
-
     return dot_product / (norm1 * norm2)
+
+def chunk_text(text: str, chunk_size: int, overlap:int) -> list[str]:
+    words = text.split()
+    chunks:list[str] = []
+    i = 0
+    while True:
+        start = i - overlap
+        if i - overlap < 0:
+            start = 0
+        chunks.append(" ".join(words[start:start + chunk_size]))
+        i = start + chunk_size
+        if i > len(words) - 1:
+            break
+    return chunks
+
+def semantic_chunk_text(text: str, chunk_size: int, overlap:int) -> list[str]:
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    chunks:list[str] = []
+    i = 0
+    while True:
+        start = i - overlap
+        if i - overlap < 0:
+            start = 0
+        chunks.append(" ".join(sentences[start:start + chunk_size]))
+        i = start + chunk_size
+        if i > len(sentences) - 1:
+            break
+    return chunks
 
 def search_command(query: str, limit: int=5):
     sem_search = SemanticSearch()
@@ -121,3 +149,15 @@ def search_command(query: str, limit: int=5):
     results = sem_search.search(query, limit)
     for i in range(len(results)):
         print(f"{i+1}. {results[i]["title"]} (score: {results[i]["score"]:.4f})\n  {results[i]["description"]}\n")
+
+def chunk_command(text: str, chunk_size: int=200, overlap: int=0):
+    chunks = chunk_text(text, chunk_size, overlap)
+    print(f"Chunking {len(text)} characters")
+    for i in range(len(chunks)):
+        print(f"{i+1}. {chunks[i]}")
+
+def semantic_chunk_command(text: str, chunk_size: int=4, overlap: int=0):
+    chunks = semantic_chunk_text(text, chunk_size, overlap)
+    print(f"Semantically chunking {len(text)} characters")
+    for i in range(len(chunks)):
+        print(f"{i+1}. {chunks[i]}")
