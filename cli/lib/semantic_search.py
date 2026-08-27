@@ -28,7 +28,7 @@ class SemanticSearch:
         embeddings = self.model.encode([text])
         return embeddings[0]
 
-    def build_embedddings(self, documents: list[Any]):
+    def build_embeddings(self, documents: list[Any]):
         self.documents = documents
         doc_strings: list[str] = []
         for doc in documents:
@@ -52,7 +52,7 @@ class SemanticSearch:
                 self.embeddings = np.load(file)
             if len(self.embeddings) == len(documents):
                 return self.embeddings
-        return self.build_embedddings(documents)
+        return self.build_embeddings(documents)
 
     def search(self, query: str, limit: int) -> list[dict[str, Any]]:
         if len(self.embeddings) == 0:
@@ -73,8 +73,6 @@ class SemanticSearch:
             }
             results.append(results_entry)
         return results[:limit]
-
-
 
 def verify_model():
     test_model = SemanticSearch()
