@@ -127,14 +127,21 @@ def chunk_text(text: str, chunk_size: int, overlap:int) -> list[str]:
     return chunks
 
 def semantic_chunk_text(text: str, chunk_size: int, overlap:int) -> list[str]:
+    stripped_text = text.strip()
+    if not stripped_text:
+        return []
     sentences = re.split(r"(?<=[.!?])\s+", text)
-    chunks:list[str] = []
+    if len(sentences) == 1 and sentences[-1] not in [",", "!", "?"]:
+        return sentences
+    chunks: list[str] = []
     i = 0
     while True:
         start = i - overlap
         if i - overlap < 0:
             start = 0
-        chunks.append(" ".join(sentences[start:start + chunk_size]))
+        new_chunk = " ".join(sentences[start:start + chunk_size]).strip()
+        if new_chunk:
+            chunks.append(" ".join(sentences[start:start + chunk_size]).strip())
         i = start + chunk_size
         if i > len(sentences) - 1:
             break
