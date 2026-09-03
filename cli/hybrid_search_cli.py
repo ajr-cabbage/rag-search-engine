@@ -1,6 +1,6 @@
 import argparse
 
-from lib.hybrid_search import normalize_command, rrf_search_command, weighted_search_command
+from lib.hybrid_search import enhance_query_expand, enhance_query_rewrite, enhance_query_spell, normalize_command, rrf_search_command, weighted_search_command
 
 
 def main() -> None:
@@ -16,6 +16,8 @@ def main() -> None:
     _ = rrf_search_parser.add_argument("query", help="search query")
     _ = rrf_search_parser.add_argument("-k", nargs="?", type=int, default=60, help="rrf weighting constant")
     _ = rrf_search_parser.add_argument("--limit", nargs="?", type=int, default=5, help="max results")
+    _ = rrf_search_parser.add_argument("--enhance", type=str, choices=["spell", "rewrite", "expand"], help="Query enhancement method")
+    _ = rrf_search_parser.add_argument("--rerank-method", type=str, choices=["individual"], help="results rerank type")
 
     args = parser.parse_args()
 
@@ -25,7 +27,29 @@ def main() -> None:
         case "weighted-search":
             weighted_search_command(args.query, args.alpha, args.limit)
         case "rrf-search":
-            rrf_search_command(args.query, args.k, args.limit)
+            if args.enhance == "spell":
+                enhanced_query = enhance_query_spell(args.query)
+                if enhanced_query != args.query:
+                    print(f"Enhanced query ({args.enhance}): '{args.query}' -> '{enhanced_query}'\n")
+                    rrf_search_command(enhanced_query, args.k, args.limit)
+                else:
+                    rrf_search_command(args.query, args.k, args.limit)
+            elif args.enhance == "rewrite":
+                enhanced_query = enhance_query_rewrite(args.query)
+                if enhanced_query != args.query:
+                    print(f"Enhanced query ({args.enhance}): '{args.query}' -> '{enhanced_query}'\n")
+                    rrf_search_command(enhanced_query, args.k, args.limit)
+                else:
+                    rrf_search_command(args.query, args.k, args.limit)
+            elif args.enhance == "expand":
+                enhanced_query = enhance_query_expand(args.query)
+                if enhanced_query != args.query:
+                    print(f"Enhanced query ({args.enhance}): '{args.query}' -> '{enhanced_query}'\n")
+                    rrf_search_command(enhanced_query, args.k, args.limit)
+                else:
+                    rrf_search_command(args.query, args.k, args.limit)
+            else:
+                rrf_search_command(args.query, args.k, args.limit)
         case _:
             parser.print_help()
 

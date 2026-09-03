@@ -5,6 +5,8 @@ from .inverted_index import InvertedIndex
 from .chunked_semantic_search import ChunkedSemanticSearch
 from .search_utils import load_movies
 from pathlib import Path
+from dotenv import load_dotenv
+from openai import OpenAI
 
 
 class HybridSearch:
@@ -52,16 +54,18 @@ class HybridSearch:
         sem_results = self.semantic_search.search_chunks(query, limit*500)
         combined_results: list[dict[str,Any]] = []
         for i in range(len(sem_results)):
+            bm25_rank = len(bm25_results)
+            if sem_results[i]["id"] in bm25_results:
+                bm25_rank = bm25_results[sem_results[i]["id"]]
             result_entry = {
                 "doc_id": sem_results[i]["id"],
-                "bm25_rank": bm25_results[sem_results[i]["id"]],
+                "bm25_rank": bm25_rank,
                 "semantic_rank": i + 1,
-                "rrf_score": rrf_score(int(bm25_results[sem_results[i]["id"]]), k) + rrf_score(i + 1, k),
+                "rrf_score": rrf_score(bm25_rank, k) + rrf_score(i + 1, k),
                 "document": self.idx.docmap[sem_results[i]["id"]]
             }
             combined_results.append(result_entry)
         return sorted(combined_results, key=lambda x: x["rrf_score"], reverse=True)
-
 
 def normalize_scores(scores:list[float]) -> list[float]:
     if len(scores) == 0:
@@ -103,3 +107,94 @@ def rrf_search_command(query: str, k: int, limit: int):
         print(f"  RRF Score: {results[i]["rrf_score"]:.4f}")
         print(f"  BM25: {results[i]["bm25_rank"]}, Semantic: {results[i]["semantic_rank"]}")
         print(f"  {results[i]["document"]["description"][:100]}...")
+
+def enhance_query_spell(query: str) -> str:
+    _ = load_dotenv()
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY environment variable not set")
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+    )
+    message_content = f"""Fix any spelling errors in the user-provided movie search query below.
+    Correct only clear, high-confidence typos. Do not rewrite, add, remove, or reorder words.
+    Preserve punctuation and capitalization unless a change is required for a typo fix.
+    If there are no spelling errors, or if you're unsure, output the original query unchanged.
+    Output only the final query text, nothing else.
+    User query: "{query}"
+    """
+    messages = [
+        {
+            "role": "user",
+            "content": message_content,
+        }
+    ]
+    response = client.chat.completions.create(messages=messages, model="openrouter/free")
+    return str(response.choices[0].message.content)
+
+def enhance_query_rewrite(query: str) -> str:
+    _ = load_dotenv()
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY environment variable not set")
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+    )
+    message_content = f"""
+    Rewrite the user-provided movie search query below to be more specific and searchable.
+    Consider:
+    - Common movie knowledge (famous actors, popular films)
+    - Genre conventions (horror = scary, animation = cartoon)
+    - Keep the rewritten query concise (under 10 words)
+    - It should be a Google-style search query, specific enough to yield relevant results
+    - Don't use boolean logic
+    Examples:
+    - "that bear movie where leo gets attacked" -> "The Revenant Leonardo DiCaprio bear attack"
+    - "movie about bear in london with marmalade" -> "Paddington London marmalade"
+    - "scary movie with bear from few years ago" -> "bear horror movie 2015-2020"
+    If you cannot improve the query, output the original unchanged.
+    Output only the rewritten query text, nothing else.
+    User query: "{query}"
+    """
+    messages = [
+        {
+            "role": "user",
+            "content": message_content,
+        }
+    ]
+    response = client.chat.completions.create(messages=messages, model="openrouter/free")
+    return str(response.choices[0].message.content)
+
+def enhance_query_expand(query: str) -> str:
+    _ = load_dotenv()
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY environment variable not set")
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+    )
+    message_content = f"""
+    Expand the user-provided movie search query below with related terms.
+
+    Add synonyms and related concepts that might appear in movie descriptions.
+    Keep expansions relevant and focused.
+    Output only the additional terms; they will be appended to the original query.
+
+    Examples:
+    - "scary bear movie" -> "scary horror grizzly bear movie terrifying film"
+    - "action movie with bear" -> "action thriller bear chase fight adventure"
+    - "comedy with bear" -> "comedy funny bear humor lighthearted"
+
+    User query: "{query}"
+    """
+    messages = [
+        {
+            "role": "user",
+            "content": message_content,
+        }
+    ]
+    response = client.chat.completions.create(messages=messages, model="openrouter/free")
+    return str(response.choices[0].message.content)

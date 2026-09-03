@@ -97,7 +97,10 @@ class InvertedIndex:
         return math.log((len(self.docmap)+1) / (len(self.index[term]) + 1))
 
     def get_bm25_idf(self, term: str) -> float:
-        return math.log((len(self.docmap) - len(self.index[term]) + 0.5) / (len(self.index[term]) + 0.5) + 1)
+        try:
+            return math.log((len(self.docmap) - len(self.index[term]) + 0.5) / (len(self.index[term]) + 0.5) + 1)
+        except KeyError:
+            return 0
 
     def get_bm25_tf(self, doc_id: int, term: str, k1: float=BM25_K1, b: float=BM25_B) -> float:
         try:
