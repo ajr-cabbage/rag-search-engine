@@ -17,7 +17,7 @@ def main() -> None:
     _ = rrf_search_parser.add_argument("-k", nargs="?", type=int, default=60, help="rrf weighting constant")
     _ = rrf_search_parser.add_argument("--limit", nargs="?", type=int, default=5, help="max results")
     _ = rrf_search_parser.add_argument("--enhance", type=str, choices=["spell", "rewrite", "expand"], help="Query enhancement method")
-    _ = rrf_search_parser.add_argument("--rerank-method", type=str, choices=["individual"], help="results rerank type")
+    _ = rrf_search_parser.add_argument("--rerank-method", type=str, choices=["individual", "batch", "cross_encoder"], default="", help="results rerank type")
 
     args = parser.parse_args()
 
@@ -31,25 +31,25 @@ def main() -> None:
                 enhanced_query = enhance_query_spell(args.query)
                 if enhanced_query != args.query:
                     print(f"Enhanced query ({args.enhance}): '{args.query}' -> '{enhanced_query}'\n")
-                    rrf_search_command(enhanced_query, args.k, args.limit)
+                    rrf_search_command(enhanced_query, args.k, args.limit, rerank=args.rerank_method)
                 else:
-                    rrf_search_command(args.query, args.k, args.limit)
+                    rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method)
             elif args.enhance == "rewrite":
                 enhanced_query = enhance_query_rewrite(args.query)
                 if enhanced_query != args.query:
                     print(f"Enhanced query ({args.enhance}): '{args.query}' -> '{enhanced_query}'\n")
-                    rrf_search_command(enhanced_query, args.k, args.limit)
+                    rrf_search_command(enhanced_query, args.k, args.limit, rerank=args.rerank_method)
                 else:
-                    rrf_search_command(args.query, args.k, args.limit)
+                    rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method)
             elif args.enhance == "expand":
                 enhanced_query = enhance_query_expand(args.query)
                 if enhanced_query != args.query:
                     print(f"Enhanced query ({args.enhance}): '{args.query}' -> '{enhanced_query}'\n")
-                    rrf_search_command(enhanced_query, args.k, args.limit)
+                    rrf_search_command(enhanced_query, args.k, args.limit, rerank=args.rerank_method)
                 else:
-                    rrf_search_command(args.query, args.k, args.limit)
+                    rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method)
             else:
-                rrf_search_command(args.query, args.k, args.limit)
+                rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method)
         case _:
             parser.print_help()
 
