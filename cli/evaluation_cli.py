@@ -27,7 +27,6 @@ def main() -> None:
     for test in test_cases:
         results = hs.rrf_search(test["query"], 60, limit)
         result_titles = [result["document"]["title"] for result in results]
-        #print(f"***{len(result_titles)}***")
         intersection = list(set(result_titles) & set(test["relevant_docs"]))
         precision = len(intersection) / limit
         recall = len(intersection) / len(test["relevant_docs"])

@@ -52,7 +52,7 @@ class HybridSearch:
         return sorted(combined_results, key=lambda x: x["hybrid"], reverse=True)
 
     def rrf_search(self, query: str, k: int, limit: int) -> list[dict[str, Any]]:
-        bm25_results = self._bm25_search(query, limit)
+        bm25_results = self._bm25_search(query, limit*500)
         bm25_keys = list(bm25_results)
         for i in range(len(bm25_results)):
             bm25_results[bm25_keys[i]] = i + 1
