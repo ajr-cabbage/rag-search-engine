@@ -1,4 +1,5 @@
 import copy
+import logging
 import os
 import re
 import json
@@ -13,6 +14,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from sentence_transformers import CrossEncoder
 
+logger = logging.getLogger(__name__)
 
 class HybridSearch:
     def __init__(self, documents: list[dict[str, Any]]) -> None:
@@ -291,7 +293,45 @@ def rerank_cross_encoder(results: list[dict[str, Any]], query: str) -> list[dict
         reranked_results[i]["cross_endocer_score"] = score
     return sorted(reranked_results, key=lambda x: x["cross_endocer_score"], reverse=True)
 
-def rrf_search_command(query: str, k: int, limit: int, rerank: str=""):
+def evaluate_results(results: list[dict[str, Any]], query: str) -> list[int]:
+    _ = load_dotenv()
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY environment variable not set")
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+    )
+    results_string = json.dumps(results)
+    message_content = f"""Rate how relevant each result is to this query on a 0-3 scale:
+
+    Query: "{query}"
+
+    Results:
+    {results_string}
+
+    Scale:
+    - 3: Highly relevant
+    - 2: Relevant
+    - 1: Marginally relevant
+    - 0: Not relevant
+
+    Do NOT give any numbers other than 0, 1, 2, or 3.
+
+    Return ONLY the scores in the same order you were given the documents. Return a valid JSON list, nothing else. For example:
+
+    [2, 0, 3, 2, 0, 1]"""
+    messages = [
+        {
+            "role": "user",
+            "content": message_content,
+        }
+    ]
+    response = client.chat.completions.create(messages=messages, model="minimax/minimax-m3:free")
+    eval_scores = json.loads(str(response.choices[0].message.content))
+    return eval_scores
+
+def rrf_search_command(query: str, k: int, limit: int, rerank: str="", evaluate: bool=False):
     documents = load_movies("./data/movies.json")
     hs = HybridSearch(documents)
     results = []
@@ -299,17 +339,24 @@ def rrf_search_command(query: str, k: int, limit: int, rerank: str=""):
         match rerank:
             case "individual":
                 prelims = hs.rrf_search(query, k, limit*3)
+                logger.info(f"RRF Results: {[x["document"]["title"] for x in prelims]}")
                 results = rerank_individual(prelims, query)
+                logger.info(f"Reranked Results: {[x["document"]["title"] for x in results]}")
             case "batch":
                 prelims = hs.rrf_search(query, k, limit*5)
+                logger.info(f"RRF Results: {[x["document"]["title"] for x in prelims]}")
                 results = rerank_batch(prelims, query)
+                logger.info(f"Reranked Results: {[x["document"]["title"] for x in results]}")
             case "cross_encoder":
                 prelims = hs.rrf_search(query, k, limit*5)
+                logger.info(f"RRF Results: {[x["document"]["title"] for x in prelims]}")
                 results = rerank_cross_encoder(prelims, query)
+                logger.info(f"Reranked Results: {[x["document"]["title"] for x in results]}")
             case _:
                 raise ValueError("bad rerank flag")
     else:
-        results = hs.rrf_search(query, k, limit*500)
+        results = hs.rrf_search(query, k, limit)
+        logger.info(f"Results: {[x["document"]["title"] for x in results]}")
     if rerank:
         print(f"Re-ranking top {limit} results using {rerank} method...")
     print(f"Reciprocal Rank Fusion Results for '{query}' (k={k}):")
@@ -322,3 +369,8 @@ def rrf_search_command(query: str, k: int, limit: int, rerank: str=""):
         print(f"  RRF Score: {results[i]["rrf_score"]:.4f}")
         print(f"  BM25: {results[i]["bm25_rank"]}, Semantic: {results[i]["semantic_rank"]}")
         print(f"  {results[i]["document"]["description"][:100]}...\n")
+    if evaluate:
+        eval_scores = evaluate_results(results, query)
+        print("Evaluation Report:")
+        for i in range(limit):
+            print(f"  {i+1}. {results[i]["document"]["title"]}: {eval_scores[i]}/3")

@@ -1,7 +1,17 @@
 import argparse
+import logging
 
 from lib.hybrid_search import enhance_query_expand, enhance_query_rewrite, enhance_query_spell, normalize_command, rrf_search_command, weighted_search_command
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("hybrid_search.log", mode="a")
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Hybrid Search CLI")
@@ -18,8 +28,11 @@ def main() -> None:
     _ = rrf_search_parser.add_argument("--limit", nargs="?", type=int, default=5, help="max results")
     _ = rrf_search_parser.add_argument("--enhance", type=str, choices=["spell", "rewrite", "expand"], help="Query enhancement method")
     _ = rrf_search_parser.add_argument("--rerank-method", type=str, choices=["individual", "batch", "cross_encoder"], default="", help="results rerank type")
+    _ = rrf_search_parser.add_argument("--evaluate", action="store_true", help="Enable relevance evaluation output")
 
     args = parser.parse_args()
+
+    logger.info(f"Starting with command: {args.command}")
 
     match args.command:
         case "normalize":
@@ -27,29 +40,33 @@ def main() -> None:
         case "weighted-search":
             weighted_search_command(args.query, args.alpha, args.limit)
         case "rrf-search":
+            logger.info(f"Query: {args.query}")
             if args.enhance == "spell":
                 enhanced_query = enhance_query_spell(args.query)
+                logger.info(f"Enhanced Query: {enhanced_query}")
                 if enhanced_query != args.query:
                     print(f"Enhanced query ({args.enhance}): '{args.query}' -> '{enhanced_query}'\n")
-                    rrf_search_command(enhanced_query, args.k, args.limit, rerank=args.rerank_method)
+                    rrf_search_command(enhanced_query, args.k, args.limit, rerank=args.rerank_method, evaluate=args.evaluate)
                 else:
-                    rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method)
+                    rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method, evaluate=args.evaluate)
             elif args.enhance == "rewrite":
                 enhanced_query = enhance_query_rewrite(args.query)
+                logger.info(f"Enhanced Query: {enhanced_query}")
                 if enhanced_query != args.query:
                     print(f"Enhanced query ({args.enhance}): '{args.query}' -> '{enhanced_query}'\n")
-                    rrf_search_command(enhanced_query, args.k, args.limit, rerank=args.rerank_method)
+                    rrf_search_command(enhanced_query, args.k, args.limit, rerank=args.rerank_method, evaluate=args.evaluate)
                 else:
-                    rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method)
+                    rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method, evaluate=args.evaluate)
             elif args.enhance == "expand":
                 enhanced_query = enhance_query_expand(args.query)
+                logger.info(f"Enhanced Query: {enhanced_query}")
                 if enhanced_query != args.query:
                     print(f"Enhanced query ({args.enhance}): '{args.query}' -> '{enhanced_query}'\n")
-                    rrf_search_command(enhanced_query, args.k, args.limit, rerank=args.rerank_method)
+                    rrf_search_command(enhanced_query, args.k, args.limit, rerank=args.rerank_method, evaluate=args.evaluate)
                 else:
-                    rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method)
+                    rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method, evaluate=args.evaluate)
             else:
-                rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method)
+                rrf_search_command(args.query, args.k, args.limit, rerank=args.rerank_method, evaluate=args.evaluate)
         case _:
             parser.print_help()
 
