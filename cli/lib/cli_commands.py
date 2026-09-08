@@ -1,7 +1,14 @@
+import sys
+
 from .constants import BM25_B, BM25_K1
 from .inverted_index import InvertedIndex
-from .search_utils import stem_tokens, filter_stop_tokens, tokenize_string, tokenize_term
-import sys
+from .search_utils import (
+    filter_stop_tokens,
+    stem_tokens,
+    tokenize_string,
+    tokenize_term,
+)
+
 
 def search_command(query: str, inv_index: InvertedIndex) -> None:
     try:

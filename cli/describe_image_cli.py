@@ -2,10 +2,11 @@ import argparse
 import base64
 import mimetypes
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from openai import OpenAI
-from pathlib import Path
+
 
 def main() -> None:
     parser = argparse.ArgumentParser("Decribe Images CLI")

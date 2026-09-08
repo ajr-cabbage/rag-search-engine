@@ -1,18 +1,19 @@
 import copy
+import json
 import logging
 import os
 import re
-import json
+from pathlib import Path
 from time import sleep
 from typing import Any
 
-from .inverted_index import InvertedIndex
-from .chunked_semantic_search import ChunkedSemanticSearch
-from .search_utils import load_movies
-from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 from sentence_transformers import CrossEncoder
+
+from .chunked_semantic_search import ChunkedSemanticSearch
+from .inverted_index import InvertedIndex
+from .search_utils import load_movies
 
 logger = logging.getLogger(__name__)
 

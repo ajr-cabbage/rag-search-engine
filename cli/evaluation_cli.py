@@ -1,8 +1,9 @@
 import argparse
 import json
 
+from lib.hybrid_search import HybridSearch
 from lib.search_utils import load_movies
-from lib.hybrid_search import HybridSearch, rrf_search_command
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Search Evaluation CLI")

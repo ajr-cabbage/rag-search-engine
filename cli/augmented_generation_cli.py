@@ -1,6 +1,12 @@
 import argparse
 
-from lib.augmented_generation import question_command, rag_command, summarize_command, citations_command
+from lib.augmented_generation import (
+    citations_command,
+    question_command,
+    rag_command,
+    summarize_command,
+)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Retrieval Augmented Generation CLI")

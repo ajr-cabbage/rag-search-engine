@@ -1,12 +1,13 @@
-from itertools import islice
 import json
-from typing import Any
-from pathlib import Path
-
-from .semantic_search import SemanticSearch, cosine_similarity, embed_query_text, semantic_chunk_text
-from .search_utils import load_movies
-import numpy as np
 import os
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from .search_utils import load_movies
+from .semantic_search import SemanticSearch, cosine_similarity, semantic_chunk_text
+
 
 class ChunkedSemanticSearch(SemanticSearch):
     def __init__(self) -> None:

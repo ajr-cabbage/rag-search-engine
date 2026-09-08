@@ -2,6 +2,7 @@ import argparse
 
 from lib.multimodal_search import image_search_command, verify_image_embedding
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Retrieval Augmented Generation CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")

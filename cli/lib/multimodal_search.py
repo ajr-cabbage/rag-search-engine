@@ -1,10 +1,11 @@
-from PIL import Image
-from numpy import ndarray
-from sentence_transformers import SentenceTransformer
 from typing import Any
+
+from PIL import Image
+from sentence_transformers import SentenceTransformer
 
 from .search_utils import load_movies
 from .semantic_search import cosine_similarity
+
 
 class MultimodalSearch:
     def __init__(self, documents, model_name="clip-ViT-B-32"):

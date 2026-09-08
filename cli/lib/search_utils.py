@@ -1,9 +1,9 @@
-import string
 import json
-from pathlib import Path
-import sys
+import string
 from typing import Any
+
 from nltk.stem import PorterStemmer
+
 
 def load_stop_words(filepath: str) -> list[str]:
     with open(filepath, "r") as file:

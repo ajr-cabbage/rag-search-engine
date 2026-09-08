@@ -1,11 +1,19 @@
-from itertools import islice
 import math
-from collections import Counter
-from pathlib import Path
 import pickle
+from collections import Counter
+from itertools import islice
+from pathlib import Path
 from typing import Any
-from .search_utils import load_stop_words, stem_tokens, filter_stop_tokens, tokenize_string, load_movies
+
 from .constants import BM25_B, BM25_K1, stop_words_filepath
+from .search_utils import (
+    filter_stop_tokens,
+    load_movies,
+    load_stop_words,
+    stem_tokens,
+    tokenize_string,
+)
+
 
 class InvertedIndex:
     index: dict[str, set[int]]

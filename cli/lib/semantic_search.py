@@ -1,13 +1,13 @@
-from mimetypes import inited
+import re
 from pathlib import Path
 from typing import Any
+
 import numpy as np
-import re
 from sentence_transformers import SentenceTransformer
 from torch import os
-from torch.nn.functional import embedding
 
 from .search_utils import load_movies
+
 
 class SemanticSearch:
 

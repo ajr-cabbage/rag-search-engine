@@ -1,7 +1,18 @@
 import argparse
-from lib.inverted_index import InvertedIndex
-from lib.cli_commands import bm25_search_command, search_command, build_command, tf_command, idf_command,tfidf_command, bm25_idf_command, bm25_tf_command
+
+from lib.cli_commands import (
+    bm25_idf_command,
+    bm25_search_command,
+    bm25_tf_command,
+    build_command,
+    idf_command,
+    search_command,
+    tf_command,
+    tfidf_command,
+)
 from lib.constants import BM25_B, BM25_K1
+from lib.inverted_index import InvertedIndex
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
@@ -9,7 +20,7 @@ def main() -> None:
 
     search_parser = subparsers.add_parser("search", help="Search movies using keywords")
     _ = search_parser.add_argument("query", type=str, help="Search query")
-    build_parser = subparsers.add_parser("build", help="Build inverted index")
+    _ = subparsers.add_parser("build", help="Build inverted index")
     tf_parser = subparsers.add_parser("tf", help="Print term frequency in a doc for a given term")
     _ = tf_parser.add_argument("doc_id", type=int, help="Document ID")
     _ = tf_parser.add_argument("term", type=str, help="freq match term")

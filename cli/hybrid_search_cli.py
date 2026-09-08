@@ -1,7 +1,14 @@
 import argparse
 import logging
 
-from lib.hybrid_search import enhance_query_expand, enhance_query_rewrite, enhance_query_spell, normalize_command, rrf_search_command, weighted_search_command
+from lib.hybrid_search import (
+    enhance_query_expand,
+    enhance_query_rewrite,
+    enhance_query_spell,
+    normalize_command,
+    rrf_search_command,
+    weighted_search_command,
+)
 
 logging.basicConfig(
     level=logging.INFO,
